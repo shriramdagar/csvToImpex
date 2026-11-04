@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.paytm.hybris.impex.HybrisImpexConverterTest" tests="4" skipped="1" failures="0" errors="0" timestamp="2026-11-04T12:51:29.681Z" hostname="TFH" time="0.132">
+  <properties/>
+  <testcase name="testAbandonedCartExportMatchesPrototype()" classname="com.paytm.hybris.impex.HybrisImpexConverterTest" time="0.092"/>
+  <testcase name="testOrderExportMatchesPrototype()" classname="com.paytm.hybris.impex.HybrisImpexConverterTest" time="0.009">
+    <skipped message="org.opentest4j.TestAbortedException: Assumption failed: Sample order export file not found; skipping" type="org.opentest4j.TestAbortedException">org.opentest4j.TestAbortedException: Assumption failed: Sample order export file not found; skipping
+	at org.junit.jupiter.api.Assumptions.throwAssumptionFailed(Assumptions.java:316)
+	at org.junit.jupiter.api.Assumptions.assumeTrue(Assumptions.java:115)
+	at com.paytm.hybris.impex.HybrisImpexConverterTest.testOrderExportMatchesPrototype(HybrisImpexConverterTest.java:47)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+</skipped>
+  </testcase>
+  <testcase name="testGenericCsvConversion()" classname="com.paytm.hybris.impex.HybrisImpexConverterTest" time="0.009"/>
+  <testcase name="testGoogleSheetUrlParsing()" classname="com.paytm.hybris.impex.HybrisImpexConverterTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
