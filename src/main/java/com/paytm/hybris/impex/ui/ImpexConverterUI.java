@@ -1,6 +1,7 @@
 package com.paytm.hybris.impex.ui;
 
 import com.paytm.hybris.impex.*;
+import com.paytm.hybris.impex.hac.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -148,6 +149,8 @@ public class ImpexConverterUI extends JFrame {
     private final ColorButton convertBtn = new ColorButton("Convert", new Color(22, 163, 74));   // Emerald Green
     private final ColorButton copyBtn = new ColorButton("Copy", new Color(37, 99, 235));        // Royal Blue
     private final ColorButton saveBtn = new ColorButton("Save as Impex", new Color(79, 70, 229)); // Indigo
+    private final ColorButton runHacBtn = new ColorButton("Run on HAC", new Color(217, 119, 6)); // Amber / Warm Orange
+    private final ColorButton hacSettingsBtn = new ColorButton("HAC Settings", new Color(71, 85, 105)); // Slate
 
     private final JTextArea previewArea = new JTextArea();
     private final JLabel statusLabel = new JLabel("Ready");
@@ -226,24 +229,48 @@ public class ImpexConverterUI extends JFrame {
         JPanel previewHeaderPanel = new JPanel(new BorderLayout());
         previewHeaderPanel.setBorder(new EmptyBorder(4, 2, 4, 2));
 
-        JLabel previewTitle = new JLabel("Generated ImpEx Preview");
+        JLabel previewTitle = new JLabel("ImpEx Script Editor (Live Editable)");
         previewTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
         previewTitle.setForeground(new Color(40, 70, 120));
 
         JPanel previewActionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         copyBtn.setEnabled(false);
         saveBtn.setEnabled(false);
+        runHacBtn.setEnabled(false);
+
         previewActionPanel.add(copyBtn);
         previewActionPanel.add(saveBtn);
+        previewActionPanel.add(runHacBtn);
+        previewActionPanel.add(hacSettingsBtn);
 
         previewHeaderPanel.add(previewTitle, BorderLayout.WEST);
         previewHeaderPanel.add(previewActionPanel, BorderLayout.EAST);
 
         previewArea.setFont(new Font("Consolas", Font.PLAIN, 13));
-        previewArea.setBackground(new Color(250, 250, 252));
-        previewArea.setEditable(false);
+        previewArea.setBackground(Color.WHITE);
+        previewArea.setEditable(true);
+        previewArea.setToolTipText("You can directly edit, modify values, or add new ImpEx lines here.");
         JScrollPane scrollPane = new JScrollPane(previewArea);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(180, 200, 220)));
+
+        // Live editor state listener
+        previewArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            private void onEdit() {
+                String text = previewArea.getText();
+                boolean hasText = !text.trim().isEmpty();
+                copyBtn.setEnabled(hasText);
+                saveBtn.setEnabled(hasText);
+                runHacBtn.setEnabled(hasText);
+
+                if (hasText) {
+                    int count = text.split("\r\n|\r|\n", -1).length;
+                    statusLabel.setText("ImpEx (Editable) - Total lines: " + count + ". Ready to copy, save, or run on HAC.");
+                }
+            }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { onEdit(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { onEdit(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { onEdit(); }
+        });
 
         JPanel centerPanel = new JPanel(new BorderLayout(0, 4));
         centerPanel.add(previewHeaderPanel, BorderLayout.NORTH);
@@ -290,6 +317,8 @@ public class ImpexConverterUI extends JFrame {
         convertBtn.addActionListener(e -> doConvert());
         copyBtn.addActionListener(e -> doCopy());
         saveBtn.addActionListener(e -> doSave());
+        runHacBtn.addActionListener(e -> doRunOnHac());
+        hacSettingsBtn.addActionListener(e -> doOpenHacSettings());
 
         // Drag & drop support
         setDropTarget(new DropTarget() {
@@ -517,9 +546,10 @@ public class ImpexConverterUI extends JFrame {
                 previewArea.setCaretPosition(0);
                 copyBtn.setEnabled(true);
                 saveBtn.setEnabled(true);
+                runHacBtn.setEnabled(true);
 
                 int lineCount = impexResult.split("\n").length;
-                statusLabel.setText("Converted successfully! Total lines: " + lineCount + ". Ready to copy or save.");
+                statusLabel.setText("Converted successfully! Total lines: " + lineCount + ". Ready to copy, save, or run on HAC.");
 
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Conversion failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -528,6 +558,95 @@ public class ImpexConverterUI extends JFrame {
                 setCursor(Cursor.getDefaultCursor());
             }
         });
+    }
+
+    private void doRunOnHac() {
+        String script = previewArea.getText();
+        if (script == null || script.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please convert a file or generate ImpEx before running on HAC.", "ImpEx Required", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        HacConfig config = HacConfig.load();
+        if (config.getEffectiveImportUrl().isEmpty() || (config.getCookie().isEmpty() && config.getUsername().isEmpty())) {
+            JOptionPane.showMessageDialog(this,
+                    "HAC connection settings are not configured yet.\nPlease configure your HAC URL and credentials.",
+                    "HAC Configuration Required", JOptionPane.INFORMATION_MESSAGE);
+            doOpenHacSettings();
+            return;
+        }
+
+        runHacBtn.setEnabled(false);
+        hacSettingsBtn.setEnabled(false);
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        statusLabel.setText("Connecting to HAC & verifying CSRF token...");
+
+        new Thread(() -> {
+            try {
+                HacClient hacClient = new HacClient();
+                HacTestResult testRes = hacClient.testConnection(config, msg -> SwingUtilities.invokeLater(() -> statusLabel.setText(msg)));
+                if (!testRes.isSuccess()) {
+                    SwingUtilities.invokeLater(() -> {
+                        statusLabel.setText("HAC Connection Failed: " + testRes.getMessage());
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "HAC Connection Check Failed!\n\n" + testRes.getMessage() +
+                                        "\n\nImpEx execution was aborted to prevent errors. Please check HAC Settings.",
+                                "HAC Connection Failed",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+                    });
+                    return;
+                }
+
+                SwingUtilities.invokeLater(() -> statusLabel.setText("Executing ImpEx on HAC..."));
+
+                HacImportResult importRes = hacClient.importImpex(config, script, msg -> SwingUtilities.invokeLater(() -> statusLabel.setText(msg)));
+
+                SwingUtilities.invokeLater(() -> {
+                    if (importRes.isSuccess()) {
+                        statusLabel.setText("✔ ImpEx executed successfully on HAC in " + importRes.getDurationMs() + "ms (" + importRes.getTotalLines() + " lines)");
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "ImpEx Import Finished Successfully on HAC!\n\n" +
+                                        "Summary: " + importRes.getSummary() + "\n" +
+                                        "Duration: " + importRes.getDurationMs() + " ms\n" +
+                                        "Lines: " + importRes.getTotalLines(),
+                                "HAC Import Success",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+                    } else {
+                        statusLabel.setText("✖ ImpEx execution failed on HAC: " + importRes.getSummary());
+                        JOptionPane.showMessageDialog(
+                                this,
+                                "ImpEx Import Failed on HAC!\n\n" +
+                                        importRes.getSummary() +
+                                        (importRes.getErrorDetails() != null && !importRes.getErrorDetails().isEmpty()
+                                                ? "\n\nDetails:\n" + importRes.getErrorDetails()
+                                                : ""),
+                                "HAC Import Failed",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+                    }
+                });
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> {
+                    statusLabel.setText("Error executing on HAC: " + ex.getMessage());
+                    JOptionPane.showMessageDialog(this, "Execution error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                });
+            } finally {
+                SwingUtilities.invokeLater(() -> {
+                    runHacBtn.setEnabled(true);
+                    hacSettingsBtn.setEnabled(true);
+                    setCursor(Cursor.getDefaultCursor());
+                });
+            }
+        }).start();
+    }
+
+    private void doOpenHacSettings() {
+        HacRunDialog dialog = new HacRunDialog(this, previewArea.getText());
+        dialog.setVisible(true);
     }
 
     private void doCopy() {

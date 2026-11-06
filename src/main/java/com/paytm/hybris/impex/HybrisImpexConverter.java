@@ -28,6 +28,12 @@ public class HybrisImpexConverter {
         boolean copyToClipboard = false;
         boolean toStdout = false;
         boolean includeUnderlyingCart = true;
+        boolean runOnHac = false;
+        String hacUrl = null;
+        String hacUser = null;
+        String hacPass = null;
+        String hacCookie = null;
+        String hacCsrf = null;
         Set<String> uniqueCols = new HashSet<>();
         Set<String> excludeCols = new HashSet<>();
         List<String> macros = new ArrayList<>();
@@ -36,6 +42,25 @@ public class HybrisImpexConverter {
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             switch (arg) {
+                case "--run-on-hac":
+                case "--hac-run":
+                    runOnHac = true;
+                    break;
+                case "--hac-url":
+                    if (i + 1 < args.length) hacUrl = args[++i];
+                    break;
+                case "--hac-user":
+                    if (i + 1 < args.length) hacUser = args[++i];
+                    break;
+                case "--hac-pass":
+                    if (i + 1 < args.length) hacPass = args[++i];
+                    break;
+                case "--hac-cookie":
+                    if (i + 1 < args.length) hacCookie = args[++i];
+                    break;
+                case "--hac-csrf":
+                    if (i + 1 < args.length) hacCsrf = args[++i];
+                    break;
                 case "-o":
                 case "--output":
                     if (i + 1 < args.length) outputPath = args[++i];
@@ -147,6 +172,35 @@ public class HybrisImpexConverter {
                 boolean copied = copyToClipboard(impexResult);
                 if (copied) {
                     System.out.println("[SUCCESS] ImpEx copied to Clipboard! Ready to paste into HAC (Console -> ImpEx Import).");
+                }
+            }
+
+            if (runOnHac) {
+                com.paytm.hybris.impex.hac.HacConfig config = com.paytm.hybris.impex.hac.HacConfig.load();
+                if (hacUrl != null) config.setImportUrl(hacUrl);
+                if (hacUser != null) config.setUsername(hacUser);
+                if (hacPass != null) config.setPassword(hacPass);
+                if (hacCookie != null) config.setCookie(hacCookie);
+                if (hacCsrf != null) config.setCsrfToken(hacCsrf);
+
+                System.out.println("\n[HAC] Verifying HAC connection & credentials before import...");
+                com.paytm.hybris.impex.hac.HacClient client = new com.paytm.hybris.impex.hac.HacClient();
+                com.paytm.hybris.impex.hac.HacTestResult testRes = client.testConnection(config, msg -> System.out.println("  " + msg));
+                if (!testRes.isSuccess()) {
+                    System.err.println("[HAC ERROR] HAC connection verification failed: " + testRes.getMessage());
+                    System.exit(1);
+                }
+
+                System.out.println("[HAC] Connected successfully! Running ImpEx on HAC...");
+                com.paytm.hybris.impex.hac.HacImportResult importRes = client.importImpex(config, impexResult, msg -> System.out.println("  " + msg));
+                if (importRes.isSuccess()) {
+                    System.out.println("[HAC SUCCESS] " + importRes.getSummary());
+                } else {
+                    System.err.println("[HAC FAILED] " + importRes.getSummary());
+                    if (importRes.getErrorDetails() != null) {
+                        System.err.println("Details: " + importRes.getErrorDetails());
+                    }
+                    System.exit(1);
                 }
             }
 
@@ -419,5 +473,11 @@ public class HybrisImpexConverter {
         System.out.println("  -c, --clipboard           Copy generated ImpEx directly to OS clipboard");
         System.out.println("  --stdout                  Print ImpEx directly to stdout");
         System.out.println("  --no-underlying-cart      Omit section 5 underlying Cart in Order export");
+        System.out.println("  --run-on-hac              Directly execute generated ImpEx on HAC");
+        System.out.println("  --hac-url <url>           HAC Import URL (default: CCv2 or localhost)");
+        System.out.println("  --hac-user <username>     HAC username");
+        System.out.println("  --hac-pass <password>     HAC password");
+        System.out.println("  --hac-cookie <cookie>     HAC Session Cookie (JSESSIONID=...; ROUTE=...)");
+        System.out.println("  --hac-csrf <token>        HAC CSRF Token");
     }
 }

@@ -59,6 +59,13 @@ Before setting up and running this project, ensure your environment meets the fo
   ```
   *(or directly: `java -jar build\libs\hybris-impex-converter-1.0.0.jar <input-file> [options]`)*
 
+- **Option C: Direct Execution on HAC (UI or CLI)**
+  - **In UI**: Click the **"Run on HAC"** button next to Preview. The modal form lets you specify your HAC Import URL, enter credentials (or paste cURL), test connection/CSRF status, and run the script with one click.
+  - **In CLI**:
+    ```powershell
+    .\run.bat <input-file> --run-on-hac --hac-url "https://<host>/hac/console/impex/import" --hac-user admin --hac-pass nimda
+    ```
+
 ---
 
 ### 2. macOS Setup
