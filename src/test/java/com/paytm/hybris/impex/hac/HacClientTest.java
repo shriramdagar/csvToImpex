@@ -126,7 +126,7 @@ public class HacClientTest {
 
     @Test
     public void testCurlParsing() {
-        String curl = "curl --url ^\"https://backoffice-internal.c0a7xy-abdullati1-s1-public.model-t.cc.commerce.ondemand.com/hac/console/impex/import^\" ^\n" +
+        String curl = "curl --url ^\"https://example-hybris.com/hac/console/impex/import^\" ^\n" +
                 "  -b ^\"JSESSIONID=7D7C460078EADF66704A18CD94441634.backoffice-d9bfbb556-xq5h6; ROUTE=.backoffice-d9bfbb556-xq5h6^\" ^\n" +
                 "  --data-raw ^\"scriptContent=^&validationEnum=IMPORT_STRICT^&maxThreads=16^&encoding=UTF-8^&_legacyMode=on^&_enableCodeExecution=on^&_distributedMode=on^&_sldEnabled=on^&_csrf=u_RXAy5orQRKraCmF7gLhQf3aPyCPkbfk4hsy-JxSuvhu467gsBuMUtalTJnnMOXJZU_4WXGRcWyWnPy9r0O_tYVfdnZjr7f^\"";
 
@@ -134,7 +134,7 @@ public class HacClientTest {
         boolean parsed = config.parseFromCurl(curl);
 
         assertTrue(parsed);
-        assertEquals("https://backoffice-internal.c0a7xy-abdullati1-s1-public.model-t.cc.commerce.ondemand.com/hac/console/impex/import", config.getImportUrl());
+        assertEquals("https://example-hybris.com/hac/console/impex/import", config.getImportUrl());
         assertEquals("JSESSIONID=7D7C460078EADF66704A18CD94441634.backoffice-d9bfbb556-xq5h6; ROUTE=.backoffice-d9bfbb556-xq5h6", config.getCookie());
         assertEquals("u_RXAy5orQRKraCmF7gLhQf3aPyCPkbfk4hsy-JxSuvhu467gsBuMUtalTJnnMOXJZU_4WXGRcWyWnPy9r0O_tYVfdnZjr7f", config.getCsrfToken());
         assertEquals(16, config.getMaxThreads());

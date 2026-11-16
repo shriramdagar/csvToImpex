@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  */
 public class HacConfig {
 
-    private String importUrl = "https://backoffice-internal.c0a7xy-abdullati1-s1-public.model-t.cc.commerce.ondemand.com/hac/console/impex/import";
+    private String importUrl = "https://<hybris-host>/hac/console/impex/import";
     private String cookie = "";
     private String csrfToken = "";
     private String username = "admin";
