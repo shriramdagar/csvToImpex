@@ -1,0 +1,32 @@
+# Gradle
+.gradle/
+build/
+
+# Java / Compilation
+*.class
+*.log
+
+# Package Files (except Gradle wrapper)
+*.jar
+*.war
+*.tar
+*.zip
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE & Editor files
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# macOS & OS artifacts
+.DS_Store
+Thumbs.db
+
+# Excel and ImpEx data files
+*.xlsx
+*.xlsm
+*.xls
+*.impex

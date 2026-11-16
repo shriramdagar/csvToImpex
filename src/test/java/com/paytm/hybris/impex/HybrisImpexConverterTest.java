@@ -11,7 +11,10 @@ public class HybrisImpexConverterTest {
 
     @Test
     public void testAbandonedCartExportMatchesPrototype() throws Exception {
-        File cartFile = new File("abandoned_cart_hybris_export_2026-11-02_20-00_to_2026-11-03_19-59.xlsx");
+        File cartFile = new File("abandoned_cart_2026_11_02.xlsx");
+        if (!cartFile.exists()) {
+            cartFile = new File("abandoned_cart_hybris_export_2026-11-02_20-00_to_2026-11-03_19-59.xlsx");
+        }
         org.junit.jupiter.api.Assumptions.assumeTrue(cartFile.exists(), "Sample cart export file not found; skipping");
 
         Map<String, XlsxReader.SheetData> sheets = XlsxReader.read(cartFile);
@@ -23,18 +26,30 @@ public class HybrisImpexConverterTest {
         assertNotNull(impex);
 
         // Verify key prototype sections
-        assertTrue(impex.contains("ImpEx: Improved Cart Import with Promotion Engine Objects"));
+        assertTrue(impex.contains("ImpEx: Abandoned Cart Import for All Records"));
         assertTrue(impex.contains("1. MACROS & CATALOG CONFIGURATION"));
-        assertTrue(impex.contains("$cartCode = 03112026160503"));
-        assertTrue(impex.contains("$customerUid = CUST-20261103-160536-ae7e48ff4f00"));
-        assertTrue(impex.contains("2. PREREQUISITES: CUSTOMER, ADDRESSES, RISKS, PRICING & COUPONS"));
+        assertTrue(impex.contains("$site = puertorico"));
+        assertTrue(impex.contains("$store = puertoricoStore"));
+        assertTrue(impex.contains("$productCatalog = puertoricoProductCatalog"));
+        assertTrue(impex.contains("2.0 Product Offering Prerequisites"));
+        assertTrue(impex.contains("INSERT_UPDATE Product; code[unique = true]"));
+        assertTrue(impex.contains("2.1 Customers (from PrereqUsers & CartPrimitive)"));
         assertTrue(impex.contains("INSERT_UPDATE Customer; uid[unique = true]"));
-        assertTrue(impex.contains("INSERT_UPDATE Address; &cartAddr"));
-        assertTrue(impex.contains("ADDR_$cartCode"));
+        assertTrue(impex.contains("2.2 Addresses (Delivery & Billing Addresses for Puerto Rico)"));
+        assertTrue(impex.contains("INSERT_UPDATE Address; &addrId"));
+        assertTrue(impex.contains("2.3 Credit Score Based Risk"));
+        assertTrue(impex.contains("INSERT_UPDATE CreditScoreBasedRisk; code[unique = true]"));
+        assertTrue(impex.contains("2.4 Credit Score Tier"));
         assertTrue(impex.contains("INSERT_UPDATE CreditScore; code[unique = true]"));
+        assertTrue(impex.contains("2.5 Delivery Mode"));
+        assertTrue(impex.contains("INSERT_UPDATE ZoneDeliveryMode; code[unique = true]"));
+        assertTrue(impex.contains("2.6 Payment Mode & Payment Info"));
+        assertTrue(impex.contains("INSERT_UPDATE CreditCardPaymentInfo; &paymentInfo"));
+        assertTrue(impex.contains("2.7 Composite Cart Prices"));
         assertTrue(impex.contains("INSERT_UPDATE TmaAbstractOrderCompositePrice; id[unique = true]"));
+        assertTrue(impex.contains("2.8 Cart Total Prices"));
         assertTrue(impex.contains("INSERT TotalPrice; &tpId"));
-        assertTrue(impex.contains("3. CART HEADER"));
+        assertTrue(impex.contains("3. CART HEADERS"));
         assertTrue(impex.contains("INSERT_UPDATE Cart; code[unique = true]"));
         assertTrue(impex.contains("4. CART LINE ITEMS"));
         assertTrue(impex.contains("INSERT_UPDATE CartEntry; order(code)[unique = true]"));
@@ -43,7 +58,10 @@ public class HybrisImpexConverterTest {
 
     @Test
     public void testOrderExportMatchesPrototype() throws Exception {
-        File orderFile = new File("order_hybris_export_2026-11-02_20-00_to_2026-11-03_19-59.xlsx");
+        File orderFile = new File("sample_orders.xlsx");
+        if (!orderFile.exists()) {
+            orderFile = new File("order_hybris_export_2026-11-06_00-00_to_2026-11-06_23-59.xlsx");
+        }
         org.junit.jupiter.api.Assumptions.assumeTrue(orderFile.exists(), "Sample order export file not found; skipping");
 
         Map<String, XlsxReader.SheetData> sheets = XlsxReader.read(orderFile);
@@ -52,27 +70,66 @@ public class HybrisImpexConverterTest {
         assertNotNull(sheets.get("PrereqAddresses"));
         assertNotNull(sheets.get("CartEntries"));
 
-        // Generate for specific order 20887047
-        String impex = OrderImpexBuilder.build(sheets, orderFile.getName(), "20887047", true);
+        // Generate for all orders
+        String impex = OrderImpexBuilder.build(sheets, orderFile.getName(), null, true);
         assertNotNull(impex);
 
-        // Verify prototype sections
-        assertTrue(impex.contains("ImpEx: Order Import for Order ID: 20887047"));
-        assertTrue(impex.contains("$orderCode = 20887047"));
-        assertTrue(impex.contains("$cartCode = 03112026155417"));
-        assertTrue(impex.contains("$customerUid = CUST-20261103-155501-12a3d21da9c0"));
+        // Verify all 6 reference sections
+        assertTrue(impex.contains("ImpEx: Order Import for All Records"));
+        assertTrue(impex.contains("1. MACROS & CATALOG CONFIGURATION"));
+        assertTrue(impex.contains("$site = puertorico"));
+        assertTrue(impex.contains("$store = puertoricoStore"));
+        assertTrue(impex.contains("$productCatalog = puertoricoProductCatalog"));
+        assertTrue(impex.contains("2.0 Product Offering Prerequisites"));
+        assertTrue(impex.contains("INSERT_UPDATE Product; code[unique = true]"));
+        assertTrue(impex.contains("2.1 Customers (from PrereqUsers & CartPrimitive)"));
         assertTrue(impex.contains("INSERT_UPDATE Customer; uid[unique = true]"));
-        assertTrue(impex.contains("Hilda  Alvarez"));
-        assertTrue(impex.contains("INSERT_UPDATE Address; &deliveryAddr"));
-        assertTrue(impex.contains("INSERT_UPDATE Address; &billingAddr"));
+        assertTrue(impex.contains("2.2 Addresses (Delivery & Billing Addresses for Puerto Rico)"));
+        assertTrue(impex.contains("INSERT_UPDATE Address; &addrId"));
+        assertTrue(impex.contains("2.3 Credit Score Based Risk"));
+        assertTrue(impex.contains("INSERT_UPDATE CreditScoreBasedRisk; code[unique = true]"));
+        assertTrue(impex.contains("2.4 Credit Score Tier"));
+        assertTrue(impex.contains("INSERT_UPDATE CreditScore; code[unique = true]"));
+        assertTrue(impex.contains("2.5 Delivery Mode"));
         assertTrue(impex.contains("INSERT_UPDATE ZoneDeliveryMode; code[unique = true]"));
-        assertTrue(impex.contains("INSERT_UPDATE StandardPaymentMode; code[unique = true]"));
-        assertTrue(impex.contains("INSERT_UPDATE CreditCardPaymentInfo; code[unique = true]"));
+        assertTrue(impex.contains("2.6 Payment Mode & Payment Info"));
+        assertTrue(impex.contains("REMOVE CreditCardPaymentInfo[batchmode = true]; code[unique = true]"));
+        assertTrue(impex.contains("INSERT_UPDATE CreditCardPaymentInfo; &paymentInfo"));
+        assertTrue(impex.contains("2.7 Composite Order Prices"));
+        assertTrue(impex.contains("INSERT_UPDATE TmaAbstractOrderCompositePrice; id[unique = true]"));
+        assertTrue(impex.contains("2.8 Order Total Prices"));
+        assertTrue(impex.contains("INSERT TotalPrice; &tpId"));
+        assertTrue(impex.contains("3. ORDER HEADERS"));
         assertTrue(impex.contains("INSERT_UPDATE Order; code[unique = true]"));
+        assertTrue(impex.contains("4. ORDER LINE ITEMS"));
         assertTrue(impex.contains("INSERT_UPDATE OrderEntry; order(code)[unique = true]"));
-        assertTrue(impex.contains("5. OPTIONAL: UNDERLYING CART & CART ENTRIES"));
+        assertTrue(impex.contains("5. CART SNAPSHOT"));
         assertTrue(impex.contains("INSERT_UPDATE Cart; code[unique = true]"));
         assertTrue(impex.contains("INSERT_UPDATE CartEntry; order(code)[unique = true]"));
+        assertTrue(impex.contains("6. PROMOTION ENGINE OBJECTS"));
+        assertTrue(impex.contains("INSERT PromotionResult; &promoResId"));
+        assertTrue(impex.contains("INSERT_UPDATE PromotionOrderEntryAdjustAction; guid[unique = true]"));
+        assertTrue(impex.contains("INSERT PromotionOrderEntryConsumed; code[unique = true]"));
+    }
+
+    @Test
+    public void testSingleOrderExportMatchesPrototype() throws Exception {
+        File orderFile = new File("sample_orders.xlsx");
+        if (!orderFile.exists()) {
+            orderFile = new File("order_hybris_export_2026-11-06_00-00_to_2026-11-06_23-59.xlsx");
+        }
+        org.junit.jupiter.api.Assumptions.assumeTrue(orderFile.exists(), "Sample order export file not found; skipping");
+
+        Map<String, XlsxReader.SheetData> sheets = XlsxReader.read(orderFile);
+
+        // Generate for single order 20887065
+        String impex = OrderImpexBuilder.build(sheets, orderFile.getName(), "20887065", true);
+        assertNotNull(impex);
+
+        assertTrue(impex.contains("ImpEx: Order Import for Order ID: 20887065"));
+        assertTrue(impex.contains("20887065"));
+        assertTrue(impex.contains("INSERT_UPDATE Order; code[unique = true]"));
+        assertTrue(impex.contains("INSERT_UPDATE OrderEntry; order(code)[unique = true]"));
     }
 
     @Test
