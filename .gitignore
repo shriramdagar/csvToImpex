@@ -1,17 +1,21 @@
 # Gradle
 .gradle/
-build/
+build/*
+!build/libs/
+build/libs/*
+!build/libs/hybris-impex-converter-*.jar
 
 # Java / Compilation
 *.class
 *.log
 
-# Package Files (except Gradle wrapper)
+# Package Files (except Gradle wrapper & prebuilt app)
 *.jar
 *.war
 *.tar
 *.zip
 !gradle/wrapper/gradle-wrapper.jar
+!build/libs/hybris-impex-converter-*.jar
 
 # IDE & Editor files
 .idea/

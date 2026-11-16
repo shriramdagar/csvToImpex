@@ -9,8 +9,9 @@ Before setting up and running this project, ensure your environment meets the fo
    - **Verification**: Run `java -version` and `javac -version` in your terminal or command prompt.
    - **Environment Variable**: Ensure `JAVA_HOME` is set and points to your JDK directory, with the `bin` directory included in your system `PATH`.
 
-2. **Gradle**:
-   - No separate Gradle installation is required. The project includes the Gradle Wrapper (`gradlew` / `gradlew.bat`).
+2. **Gradle (Optional / For Developers Only)**:
+   - **No Gradle installation or build is needed for running**: The project comes with a pre-built JAR (`build/libs/hybris-impex-converter-1.0.0.jar`), so you can directly launch the tool using `./run.sh`, `run.bat`, or `run.ps1` without downloading Gradle or compiling anything.
+   - If you want to modify the source code and rebuild, Gradle Wrapper (`gradlew` / `gradlew.bat`) is included.
 
 ---
 
